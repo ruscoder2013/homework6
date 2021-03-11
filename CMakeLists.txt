@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(bulk)
+project(bulk VERSION 0.0.$ENV{TRAVIS_BUILD_NUMBER})
 
 add_executable(bulk main.cpp)
 
