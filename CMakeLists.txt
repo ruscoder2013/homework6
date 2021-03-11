@@ -1,19 +1,19 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(main)
+project(bulk)
 
-add_executable(main main.cpp)
+add_executable(bulk main.cpp)
 
-set_target_properties(main PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
+set_target_properties(bulk PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
 
 if (MSVC)
     target_compile_options(
-            main PRIVATE
+            bulk PRIVATE
             /W4
     )
 else ()
     target_compile_options(
-            main PRIVATE
+            bulk PRIVATE
             -Wall -Wextra -pedantic #-Werror
     )
 endif()

@@ -39,10 +39,13 @@ void write_to_file(std::string file_name, std::string input) {
     out.close();
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     int N;
-    std::cout << "N = ";
-    std::cin >> N;
+    if (argc > 1)
+        N = atoi(argv[1]);
+    else 
+        return -1;
+    
     std::vector<std::string> commands;
     std::chrono::milliseconds ms;
     std::string cmd;
