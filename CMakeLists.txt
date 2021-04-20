@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(async)
+project(async VERSION 0.0.$ENV{TRAVIS_BUILD_NUMBER})
 find_package(Threads)
 add_library(async SHARED threadsafe_queue.h async.h async.cpp)
 target_include_directories(async PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
