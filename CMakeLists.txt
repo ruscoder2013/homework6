@@ -1,23 +1,24 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(bulk)
+project(async)
 find_package(Threads)
-add_executable(bulk main.cpp)
+add_library(async SHARED threadsafe_queue.h async.h async.cpp)
+target_include_directories(async PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
-set_target_properties(bulk PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
+set_target_properties(async PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
 
-target_link_libraries(bulk
+target_link_libraries(async
   ${CMAKE_THREAD_LIBS_INIT}
   )
 
 if (MSVC)
     target_compile_options(
-            bulk PRIVATE
+            async PRIVATE
             /W4
     )
 else ()
     target_compile_options(
-            bulk PRIVATE
+            async PRIVATE
             -Wall -Wextra -pedantic #-Werror
     )
 endif()
@@ -31,3 +32,5 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_PACKAGE_CONTACT example@example.com)
 
 include(CPack)
+
+install(TARGETS async DESTINATION /usr/local/lib)
