@@ -66,49 +66,28 @@ std::string name_file() {
 
 namespace async {
     
-    struct Handle {
+    class Handle {
+    public:
         Handle(size_t n) {
             N = n;
             log_thread = new std::thread(&Handle::write_to_cout, this);
             file1_thread = new std::thread(&Handle::write_to_file_thread, this);
             file2_thread = new std::thread(&Handle::write_to_file_thread, this);
         }
-        void write_to_file_thread() {
-        std::unique_lock<std::mutex> lk(mut_file);
-            while(!finish) {
-                cv_file.wait(lk, [this](){ 
-                    return !messages_2.empty() || finish; 
-                });
-                while(!messages_2.empty()) {
-                    file_record record;
-                    auto success = messages_2.try_pop(record);
-                    if(success)
-                    {
-                        std::ofstream out;
-                        out.open(record.file_name);
-                        out << record.bulk;
-                        out.close();
-                    }
-                }
-                if(finish)
-                    break; 
-            }
-        }
-        void write_to_cout() {
-            std::unique_lock<std::mutex> lk(mut);
-            while(!finish) {
-                cv.wait(lk, [this](){ 
-                    return !messages.empty() || finish; 
-                    });
-                while(!messages.empty())
-                {
-                    std::string str;
-                    auto success = messages.try_pop(str);
-                    std::cout << str;
-                }
-                if(finish)
-                    break; 
-            }
+        ~Handle() {
+            try_to_show();
+            finish = true;
+            cv.notify_one();
+            cv_file.notify_all();
+            log_thread->join();
+            file1_thread->join();
+            file2_thread->join();
+            if(log_thread!=nullptr)
+                delete log_thread;
+            if(file1_thread!=nullptr)
+                delete file1_thread;
+            if(file2_thread!=nullptr)
+                delete file2_thread;
         }
         void receive(const char* data, std::size_t size) {
             std::string s(data);
@@ -143,7 +122,7 @@ namespace async {
             if(data[size-1]!='\n')
                 string_buffer = cmd;
         }
-        
+    private:
         std::thread *log_thread;
         std::thread *file1_thread;
         std::thread *file2_thread;
@@ -166,34 +145,52 @@ namespace async {
         bool ready_flag = false;
         int N;
         std::ofstream out;
-        ~Handle() {
-            try_to_show();
-            finish = true;
-            cv.notify_one();
-            cv_file.notify_all();
-            log_thread->join();
-            file1_thread->join();
-            file2_thread->join();
-            if(log_thread!=nullptr)
-                delete log_thread;
-            if(file1_thread!=nullptr)
-                delete file1_thread;
-            if(file2_thread!=nullptr)
-                delete file2_thread;
+        void write_to_file_thread() {
+        std::unique_lock<std::mutex> lk(mut_file);
+            while(!finish) {
+                cv_file.wait(lk, [this](){ 
+                    return !messages_2.empty() || finish; 
+                });
+                while(!messages_2.empty()) {
+                    file_record record;
+                    auto success = messages_2.try_pop(record);
+                    if(success)
+                    {
+                        std::ofstream out;
+                        out.open(record.file_name);
+                        out << record.bulk;
+                        out.close();
+                    }
+                }
+                if(finish)
+                    break; 
+            }
         }
-        void write_to_file(std::string bulk) {
-            file_record record;
-            record.file_name = file_name;
-            record.bulk = bulk;
-            messages_2.push(record);
-            cv_file.notify_one();
+        void write_to_cout() {
+            std::unique_lock<std::mutex> lk(mut);
+            while(!finish) {
+                cv.wait(lk, [this](){ 
+                    return !messages.empty() || finish; 
+                    });
+                while(!messages.empty())
+                {
+                    std::string str;
+                    auto success = messages.try_pop(str);
+                    if(success)
+                        std::cout << str;
+                } 
+            }
         }
         void try_to_show() {
             if(brace_count==0) {
-                auto str = get_bulk_str(commands);
-                messages.push(str);
+                auto bulk_str = get_bulk_str(commands);
+                
+                messages.push(bulk_str);
                 cv.notify_one();
-                write_to_file(str);
+                
+                messages_2.push(file_record{file_name, bulk_str});
+                cv_file.notify_one();
+                
                 commands.clear();
             }
         }
