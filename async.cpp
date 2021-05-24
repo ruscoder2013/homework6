@@ -21,7 +21,7 @@ struct file_record {
 std::string get_bulk_str(std::vector<std::string>& commands) {
     std::ostringstream oss;
     if (commands.size()==0) return "";
-    oss << "bulk23: ";
+    oss << "bulk: ";
     for(int i = 0; i < commands.size(); i++)
     {
         if (i>0)
